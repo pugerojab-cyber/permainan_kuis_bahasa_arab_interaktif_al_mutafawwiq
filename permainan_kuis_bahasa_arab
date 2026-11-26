@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Al-Mutafawwiq - Game Kuis Bahasa Arab Interaktif</title>
+    <!-- Memuat Tailwind CSS untuk tata letak responsif dan modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Google Fonts: Plus Jakarta Sans (Latin) & Amiri + Noto Naskh Arabic (Arab berharakat jelas) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Memuat Tone.js untuk efek suara interaktif (benar, salah, menang) tanpa link eksternal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        /* Pengaturan Font Utama & Font Arab */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f7f5;
+            background-image: radial-gradient(#10b98118 1.5px, transparent 1.5px), radial-gradient(#d9770614 1.5px, #f4f7f5 1.5px);
+            background-size: 36px 36px;
+            background-position: 0 0, 18px 18px;
+        }
+
+        .font-arab {
+            font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+            direction: rtl;
+            line-height: 1.9;
+        }
+
+        .font-arab-title {
+            font-family: 'Amiri', serif;
+            direction: rtl;
+        }
+
+        /* Animasi Kustom untuk Interaksi Game */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .animate-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* Efek tombol 3D ala game edukasi (seperti Duolingo) */
+        .btn-game {
+            transition: all 0.15s ease;
+            border-bottom-width: 4px;
+        }
+        .btn-game:active:not(:disabled) {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between selection:bg-emerald-200 selection:text-emerald-900">
+
+    <!-- Navbar Atas Minimalis -->
+    <header class="w-full bg-white/90 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-md shadow-emerald-200">
+                    <!-- Ikon Bintang Islami SVG -->
+                    <svg class="w-6 h-6 text-amber-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L14.8 8.5L21.8 9.2L16.5 13.9L18.1 20.8L12 17.1L5.9 20.8L7.5 13.9L2.2 9.2L9.2 8.5L12 2Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl text-emerald-950 tracking-tight leading-none">
+                        Al-Mutafawwiq
+                    </h1>
+                    <p class="text-xs text-emerald-600 font-medium mt-0.5">Kuis Interaktif Bahasa Arab</p>
+                </div>
+            </div>
+
+            <!-- Tombol Kontrol Suara & Kembali -->
+            <div class="flex items-center gap-2">
+                <button id="soundToggleBtn" onclick="toggleSound()" title="Suara Efek Game" class="p-2.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 transition">
+                    <!-- Ikon Sound On -->
+                    <svg id="soundOnIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <!-- Ikon Sound Off (Tersembunyi awalnya) -->
+                    <svg id="soundOffIcon" class="w-5 h-5 hidden text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Kontainer Utama Aplikasi -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-3xl">
+
+            <!-- ========================================== -->
+            <!-- 1. LAYAR AWAL (START SCREEN)               -->
+            <!-- ========================================== -->
+            <section id="startScreen" class="animate-pop">
+                <!-- Banner Sambutan -->
+                <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-emerald-900/10 relative overflow-hidden mb-6">
+                    <!-- Ornamen Dekoratif Latar -->
+                    <div class="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-amber-400/10 blur-xl pointer-events-none"></div>
+                    <div class="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-emerald-400/15 blur-xl pointer-events-none"></div>
+
+                    <div class="relative z-10 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div>
+                            <span class="inline-block px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-200 text-xs font-semibold tracking-wider uppercase mb-3">
+                                Belajar Sambil Bermain
+                            </span>
+                            <p class="font-arab-title text-3xl sm:text-4xl text-amber-300 mb-2">أَهْلًا وَسَهْلًا بِكُمْ</p>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
+                                Tantang Kemampuan Bahasa Arabmu!
+                            </h2>
+                            <p class="text-emerald-100 text-sm sm:text-base max-w-lg leading-relaxed">
+                                Pilih kategori materi di bawah ini, kumpulkan poin sebanyak-banyaknya, pertahankan 3 nyawa, dan raih predikat <strong class="text-amber-300">Mumtaz (مُمْتَازٌ)</strong>!
+                            </p>
+                        </div>
+                        <div class="shrink-0 bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-2xl text-center min-w-[140px]">
+                            <div class="text-xs text-emerald-200 uppercase font-semibold">Skor Tertinggi</div>
+                            <div id="highScoreDisplay" class="text-3xl font-black text-amber-300 mt-1">0</div>
+                            <div class="text-[11px] text-emerald-100 mt-1">Poin Terbaik</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pilihan Kategori Materi -->
+                <div class="mb-3 flex items-center justify-between px-1">
+                    <h3 class="font-bold text-slate-700 text-base sm:text-lg">Pilih Kategori Permainan:</h3>
+                    <span class="text-xs text-slate-500 font-medium">8 Soal per Sesi</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Kategori 1: Mufradat -->
+                    <button onclick="startGame('mufradat')" class="btn-game group text-left bg-white hover:bg-emerald-50/70 border-2 border-slate-200 border-b-emerald-600 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-arab text-2xl font-bold group-hover:scale-110 transition">
+                                    مُفْرَدَات
+                                </span>
+                                <span class="px-2.5 py-1 rounded-lg bg-emerald-100/80 text-emerald-800 text-xs font-bold">
+                                    Level 1 • Dasar
+                                </span>
+                            </div>
+                            <h4 class="font-extrabold text-lg text-slate-800 group-hover:text-emerald-800">Kosakata Sehari-hari</h4>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                                Mengenal nama benda di sekitar, anggota tubuh, warna, dan aktivitas harian.
+                            </p>
+                        </div>
+                        <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-emerald-700 font-bold text-sm">
+                            <span>Mulai Main</span>
+                            <span class="group-hover:translate-x-1 transition">→</span>
+                        </div>
+                    </button>
+
+                    <!-- Kategori 2: Muhadatsah -->
+                    <button onclick="startGame('muhadatsah')" class="btn-game group text-left bg-white hover:bg-amber-50/60 border-2 border-slate-200 border-b-amber-500 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-arab text-2xl font-bold group-hover:scale-110 transition">
+                                    مُحَادَثَة
+                                </span>
+                                <span class="px-2.5 py-1 rounded-lg bg-amber-100/80 text-amber-800 text-xs font-bold">
+                                    Level 2 • Dialog
+                                </span>
+                            </div>
+                            <h4 class="font-extrabold text-lg text-slate-800 group-hover:text-amber-800">Percakapan Dasar</h4>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                                Melengkapi kalimat sapaan, perkenalan diri, menanyakan kabar, dan ungkapan sopan.
+                            </p>
+                        </div>
+                        <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-amber-700 font-bold text-sm">
+                            <span>Mulai Main</span>
+                            <span class="group-hover:translate-x-1 transition">→</span>
+                        </div>
+                    </button>
+
+                    <!-- Kategori 3: Tata Bahasa (Qawaid) -->
+                    <button onclick="startGame('qawaid')" class="btn-game group text-left bg-white hover:bg-teal-50/70 border-2 border-slate-200 border-b-teal-600 rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-arab text-2xl font-bold group-hover:scale-110 transition">
+                                    قَوَاعِد
+                                </span>
+                                <span class="px-2.5 py-1 rounded-lg bg-teal-100/80 text-teal-800 text-xs font-bold">
+                                    Level 3 • Nahwu
+                                </span>
+                            </div>
+                            <h4 class="font-extrabold text-lg text-slate-800 group-hover:text-teal-800">Dasar Tata Bahasa</h4>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                                Membedakan Isim (kata benda), Fi'il (kata kerja), Huruf, serta kata tunjuk (Isyarah).
+                            </p>
+                        </div>
+                        <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-teal-700 font-bold text-sm">
+                            <span>Mulai Main</span>
+                            <span class="group-hover:translate-x-1 transition">→</span>
+                        </div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- 2. LAYAR PERMAINAN KUIS (QUIZ SCREEN)      -->
+            <!-- ========================================== -->
+            <section id="quizScreen" class="hidden">
+                <!-- Bar Status Game: Nyawa, Progress Bar, Skor & Streak -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 mb-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <!-- Tombol Keluar & Nyawa (Hearts) -->
+                        <div class="flex items-center gap-3">
+                            <button onclick="confirmQuit()" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition" title="Keluar ke Menu">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            <div id="livesContainer" class="flex items-center gap-1" aria-label="Sisa Nyawa">
+                                <!-- Ikon hati dirender lewat JS -->
+                            </div>
+                        </div>
+
+                        <!-- Indikator Kategori -->
+                        <span id="categoryBadge" class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                            Kosakata
+                        </span>
+
+                        <!-- Streak & Skor -->
+                        <div class="flex items-center gap-3">
+                            <div id="streakBadge" class="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs font-extrabold transition-transform">
+                                <span>🔥</span>
+                                <span id="streakCount">0</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs sm:text-sm font-extrabold shadow-sm">
+                                <span>★</span>
+                                <span id="scoreDisplay">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar Soal -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60">
+                            <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-amber-400 rounded-full transition-all duration-500 ease-out" style="width: 12.5%"></div>
+                        </div>
+                        <span id="questionCounter" class="text-xs font-bold text-slate-500 whitespace-nowrap">1 / 8</span>
+                    </div>
+                </div>
+
+                <!-- Kartu Pertanyaan Utama -->
+                <div id="questionCard" class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200/80 animate-pop">
+                    <!-- Instruksi Soal -->
+                    <p id="questionPrompt" class="text-sm sm:text-base font-semibold text-slate-500 text-center mb-4">
+                        Apa arti dari kata bahasa Arab berikut?
+                    </p>
+
+                    <!-- Kotak Teks Arab Besar & Jelas -->
+                    <div class="bg-gradient-to-b from-emerald-50/70 to-amber-50/40 border border-emerald-100 rounded-2xl p-6 sm:p-8 mb-6 text-center relative">
+                        <div id="arabicText" class="font-arab text-4xl sm:text-5xl md:text-6xl font-bold text-emerald-950 tracking-wide py-2">
+                            كِتَابٌ
+                        </div>
+                        <div id="transliterationHint" class="text-xs sm:text-sm text-emerald-700/80 font-medium mt-2">
+                            (Kitaabun)
+                        </div>
+                    </div>
+
+                    <!-- Pilihan Jawaban (Grid 2 Kolom di Desktop, 1 Kolom di HP) -->
+                    <div id="optionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <!-- Tombol Opsi dirender oleh JavaScript -->
+                    </div>
+
+                    <!-- Panel Umpan Balik Instan (Muncul setelah user menjawab) -->
+                    <div id="feedbackBox" class="hidden mt-6 rounded-2xl p-4 sm:p-5 border-2 transition-all">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-start gap-3">
+                                <div id="feedbackIcon" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl font-bold mt-0.5">
+                                    ✓
+                                </div>
+                                <div>
+                                    <h4 id="feedbackTitle" class="font-extrabold text-base sm:text-lg">
+                                        Mumtaz! Jawaban Benar
+                                    </h4>
+                                    <p id="feedbackExplanation" class="text-xs sm:text-sm mt-1 leading-relaxed">
+                                        Penjelasan arti kata muncul di sini.
+                                    </p>
+                                </div>
+                            </div>
+                            <button id="nextQuestionBtn" onclick="nextQuestion()" class="btn-game shrink-0 px-6 py-3 rounded-xl font-bold text-white text-sm sm:text-base shadow-md cursor-pointer">
+                                Lanjut →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- 3. LAYAR HASIL AKHIR (RESULT SCREEN)       -->
+            <!-- ========================================== -->
+            <section id="resultScreen" class="hidden animate-pop">
+                <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-200/80 text-center">
+                    <!-- Lencana Predikat -->
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-200 mb-4">
+                        <svg class="w-11 h-11" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                        </svg>
+                    </div>
+
+                    <p id="resultArabicGrade" class="font-arab-title text-4xl sm:text-5xl font-bold text-emerald-700 mb-1">
+                        مُمْتَازٌ
+                    </p>
+                    <h2 id="resultGradeTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-800">
+                        Mumtaz (Sempurna!)
+                    </h2>
+                    <p id="resultSubtitle" class="text-sm sm:text-base text-slate-500 max-w-md mx-auto mt-2">
+                        Luar biasa! Kamu menguasai materi bahasa Arab pada kategori ini dengan sangat baik.
+                    </p>
+
+                    <!-- Kartu Statistik Skor -->
+                    <div class="grid grid-cols-3 gap-3 sm:gap-4 my-7 max-w-lg mx-auto">
+                        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5">
+                            <div class="text-xs font-semibold text-emerald-700">Total Skor</div>
+                            <div id="finalScore" class="text-2xl sm:text-3xl font-black text-emerald-900 mt-1">0</div>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-3.5">
+                            <div class="text-xs font-semibold text-amber-700">Jawaban Benar</div>
+                            <div id="finalCorrect" class="text-2xl sm:text-3xl font-black text-amber-900 mt-1">0/8</div>
+                        </div>
+                        <div class="bg-teal-50 border border-teal-100 rounded-2xl p-3.5">
+                            <div class="text-xs font-semibold text-teal-700">Max Streak</div>
+                            <div id="finalStreak" class="text-2xl sm:text-3xl font-black text-teal-900 mt-1">0🔥</div>
+                        </div>
+                    </div>
+
+                    <!-- Ringkasan Review Jawaban -->
+                    <div class="text-left max-w-xl mx-auto mb-7">
+                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span>Ringkasan Pembelajaran</span>
+                            <span class="h-px bg-slate-200 flex-grow"></span>
+                        </h3>
+                        <div id="reviewList" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                            <!-- Daftar ringkasan soal & jawaban dirender via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Akhir -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button onclick="replayCategory()" class="btn-game w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 border-b-emerald-800 text-white font-bold text-base shadow-md">
+                            ↻ Main Lagi Kategori Ini
+                        </button>
+                        <button onclick="goHome()" class="btn-game w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border-b-slate-300 text-slate-700 font-bold text-base">
+                            Pilih Kategori Lain
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Modal Konfirmasi Keluar Kustom (Pengganti confirm() bawaan browser) -->
+    <div id="quitModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl animate-pop">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                !
+            </div>
+            <h3 class="text-lg font-extrabold text-slate-800">Keluar dari Permainan?</h3>
+            <p class="text-sm text-slate-500 mt-1 mb-5">Progres kuis saat ini tidak akan tersimpan jika kamu kembali ke menu utama.</p>
+            <div class="flex gap-3">
+                <button onclick="closeQuitModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 text-sm">
+                    Lanjut Main
+                </button>
+                <button onclick="confirmGoHome()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 font-bold text-white text-sm">
+                    Ya, Keluar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Sederhana -->
+    <footer class="text-center py-4 text-xs text-slate-400">
+        Media Pembelajaran Bahasa Arab Interaktif • Dibuat dengan Semangat Belajar
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- LOGIKA JAVASCRIPT GAME KUIS                -->
+    <!-- ========================================== -->
+    <script>
+        // 1. BANK SOAL BERDASARKAN KATEGORI
+        const quizDatabase = {
+            mufradat: {
+                title: "Kosakata Sehari-hari (Mufradat)",
+                questions: [
+                    {
+                        prompt: "Apa arti dari kata benda berikut?",
+                        arabic: "كِتَابٌ",
+                        transliteration: "Kitaabun",
+                        options: ["Buku", "Pena", "Meja", "Tas"],
+                        correctIndex: 0,
+                        isArabicOptions: false,
+                        explanation: "كِتَابٌ (Kitaabun) artinya 'Buku'. Contoh jamaknya adalah كُتُبٌ (Kutubun)."
+                    },
+                    {
+                        prompt: "Pilih bahasa Arab yang tepat untuk kata 'Sekolah':",
+                        arabic: "Sekolah",
+                        transliteration: "Tempat menuntut ilmu",
+                        options: ["مَدْرَسَةٌ", "مَسْجِدٌ", "مَكْتَبَةٌ", "بَيْتٌ"],
+                        correctIndex: 0,
+                        isArabicOptions: true,
+                        explanation: "مَدْرَسَةٌ (Madrasatun) artinya Sekolah. Sedangkan مَسْجِدٌ artinya Masjid dan بَيْتٌ artinya Rumah."
+                    },
+                    {
+                        prompt: "Apa arti dari kata berikut ini?",
+                        arabic: "قَلَمٌ",
+                        transliteration: "Qalamun",
+                        options: ["Penghapus", "Penggaris", "Pena / Pulpen", "Papan Tulis"],
+                        correctIndex: 2,
+                        isArabicOptions: false,
+                        explanation: "قَلَمٌ (Qalamun) artinya Pena atau Pulpen."
+                    },
+                    {
+                        prompt: "Manakah bahasa Arab dari 'Air'?",
+                        arabic: "Air",
+                        transliteration: "Minuman segar",
+                        options: ["خُبْزٌ", "مَاءٌ", "لَبَنٌ", "شَايٌ"],
+                        correctIndex: 1,
+                        isArabicOptions: true,
+                        explanation: "مَاءٌ (Maa'un) artinya Air. خُبْزٌ artinya Roti, لَبَنٌ artinya Susu, dan شَايٌ artinya Teh."
+                    },
+                    {
+                        prompt: "Apa arti dari kosakata anggota tubuh berikut?",
+                        arabic: "عَيْنٌ",
+                        transliteration: "'Ainun",
+                        options: ["Telinga", "Hidung", "Tangan", "Mata"],
+                        correctIndex: 3,
+                        isArabicOptions: false,
+                        explanation: "عَيْنٌ ('Ainun) berarti Mata. Kalau telinga adalah أُذُنٌ (Udzunun)."
+                    },
+                    {
+                        prompt: "Apa arti dari kata sifat berikut?",
+                        arabic: "جَمِيلٌ",
+                        transliteration: "Jamiilun",
+                        options: ["Besar", "Indah / Bagus", "Cepat", "Jauh"],
+                        correctIndex: 1,
+                        isArabicOptions: false,
+                        explanation: "جَمِيلٌ (Jamiilun) artinya Indah, Tampan, atau Bagus."
+                    },
+                    {
+                        prompt: "Pilih bahasa Arab untuk kata 'Guru (Laki-laki)':",
+                        arabic: "Guru (Laki-laki)",
+                        transliteration: "Pendidik di sekolah",
+                        options: ["طَالِبٌ", "طَبِيبٌ", "مُدَرِّسٌ", "مُهَنْدِسٌ"],
+                        correctIndex: 2,
+                        isArabicOptions: true,
+                        explanation: "مُدَرِّسٌ (Mudarrisun) atau أُسْتَاذٌ (Ustaadzun) artinya Guru. طَالِبٌ adalah Siswa."
+                    },
+                    {
+                        prompt: "Apa arti dari kata berikut?",
+                        arabic: "شَمْسٌ",
+                        transliteration: "Syamsun",
+                        options: ["Bulan", "Bintang", "Langit", "Matahari"],
+                        correctIndex: 3,
+                        isArabicOptions: false,
+                        explanation: "شَمْسٌ (Syamsun) artinya Matahari, sedangkan Bulan adalah قَمَرٌ (Qamarun)."
+                    }
+                ]
+            },
+            muhadatsah: {
+                title: "Percakapan Dasar (Muhadatsah)",
+                questions: [
+                    {
+                        prompt: "Bagaimana jawaban yang tepat untuk sapaan pagi ini?",
+                        arabic: "صَبَاحُ الْخَيْرِ",
+                        transliteration: "Shabaahul khair (Selamat pagi)",
+                        options: ["صَبَاحُ النُّورِ", "مَسَاءُ النُّورِ", "أَهْلًا بِكَ", "مَعَ السَّلَامَةِ"],
+                        correctIndex: 0,
+                        isArabicOptions: true,
+                        explanation: "صَبَاحُ الْخَيْرِ (Selamat pagi) dijawab dengan صَبَاحُ النُّورِ (Shabaahun nuur - Selamat pagi juga)."
+                    },
+                    {
+                        prompt: "Apa arti dari ungkapan percakapan berikut?",
+                        arabic: "كَيْفَ حَالُكَ؟",
+                        transliteration: "Kaifa haaluka?",
+                        options: ["Siapa namamu?", "Dari mana asalmu?", "Bagaimana kabarmu?", "Di mana rumahmu?"],
+                        correctIndex: 2,
+                        isArabicOptions: false,
+                        explanation: "كَيْفَ حَالُكَ؟ (Kaifa haaluka?) artinya 'Bagaimana kabarmu?'. Biasanya dijawab: بِخَيْرٍ وَالْحَمْدُ لِلّٰهِ."
+                    },
+                    {
+                        prompt: "Jika seseorang bertanya 'مَا اسْمُكَ؟', jawaban yang tepat adalah:",
+                        arabic: "مَا اسْمُكَ؟",
+                        transliteration: "Masmuka? (Siapa namamu?)",
+                        options: ["عُمْرِي عِشْرُونَ سَنَةً", "اِسْمِي أَحْمَدُ", "أَنَا مِنْ إِنْدُونِيسِيَا", "أَنَا طَالِبٌ"],
+                        correctIndex: 1,
+                        isArabicOptions: true,
+                        explanation: "مَا اسْمُكَ؟ menanyakan nama, maka dijawab اِسْمِي أَحْمَدُ (Ismii Ahmad - Nama saya Ahmad)."
+                    },
+                    {
+                        prompt: "Apa balasan yang sopan ketika seseorang mengucapkan:",
+                        arabic: "شُكْرًا جَزِيلًا",
+                        transliteration: "Syukran jaziilan (Terima kasih banyak)",
+                        options: ["عَفْوًا", "تَفَضَّلْ", "مُمْتَازٌ", "آسِفٌ"],
+                        correctIndex: 0,
+                        isArabicOptions: true,
+                        explanation: "شُكْرًا (Terima kasih) dibalas dengan عَفْوًا ('Afwan - Sama-sama)."
+                    },
+                    {
+                        prompt: "Apa arti dari ungkapan perpisahan berikut?",
+                        arabic: "إِلَى اللِّقَاءِ",
+                        transliteration: "Ilal liqaa'",
+                        options: ["Selamat datang", "Sampai jumpa lagi", "Silakan masuk", "Selamat tidur"],
+                        correctIndex: 1,
+                        isArabicOptions: false,
+                        explanation: "إِلَى اللِّقَاءِ (Ilal liqaa') artinya 'Sampai jumpa lagi', dijawab dengan مَعَ السَّلَامَةِ."
+                    },
+                    {
+                        prompt: "Ungkapan untuk menanyakan asal daerah seseorang adalah:",
+                        arabic: "Dari mana asalmu?",
+                        transliteration: "Pertanyaan perkenalan",
+                        options: ["أَيْنَ تَسْكُنُ؟", "مِنْ أَيْنَ أَنْتَ؟", "مَا مِهْنَتُكَ؟", "كَمِ السَّاعَةُ؟"],
+                        correctIndex: 1,
+                        isArabicOptions: true,
+                        explanation: "مِنْ أَيْنَ أَنْتَ؟ (Min aina anta?) artinya 'Dari mana kamu berasal?'."
+                    },
+                    {
+                        prompt: "Apa arti dari sapaan ramah berikut?",
+                        arabic: "أَهْلًا وَسَهْلًا",
+                        transliteration: "Ahlan wa sahlan",
+                        options: ["Selamat datang", "Semoga sukses", "Apa kabar", "Permisi"],
+                        correctIndex: 0,
+                        isArabicOptions: false,
+                        explanation: "أَهْلًا وَسَهْلًا (Ahlan wa sahlan) artinya 'Selamat datang', dijawab أَهْلًا بِكَ (Ahlan bika)."
+                    },
+                    {
+                        prompt: "Bagaimana cara mengucapkan 'Saya suka bahasa Arab'?",
+                        arabic: "Saya suka bahasa Arab",
+                        transliteration: "Ungkapan kesukaan",
+                        options: ["أُحِبُّ اللُّغَةَ الْعَرَبِيَّةَ", "أَكْتُبُ الدَّرْسَ", "أَذْهَبُ إِلَى السُّوقِ", "أَقْرَأُ الْقُرْآنَ"],
+                        correctIndex: 0,
+                        isArabicOptions: true,
+                        explanation: "أُحِبُّ اللُّغَةَ الْعَرَبِيَّةَ (Uhibbul lughatal 'arabiyyah) artinya 'Saya menyukai bahasa Arab'."
+                    }
+                ]
+            },
+            qawaid: {
+                title: "Dasar Tata Bahasa (Qawaid)",
+                questions: [
+                    {
+                        prompt: "Termasuk jenis kata apakah kata berikut dalam bahasa Arab?",
+                        arabic: "ذَهَبَ",
+                        transliteration: "Dzahaba (Telah pergi)",
+                        options: ["Isim (Kata Benda)", "Fi'il (Kata Kerja)", "Huruf (Kata Tugas)", "Dhamir (Kata Ganti)"],
+                        correctIndex: 1,
+                        isArabicOptions: false,
+                        explanation: "ذَهَبَ (Dzahaba) adalah Fi'il Madhi (kata kerja bentuk lampau) yang berarti 'telah pergi'."
+                    },
+                    {
+                        prompt: "Kata tunjuk (Isim Isyarah) yang tepat untuk benda laki-laki (Mudzakkar) dekat adalah:",
+                        arabic: "..... قَلَمٌ جَدِيدٌ",
+                        transliteration: "(Ini pena yang baru)",
+                        options: ["هٰذِهِ", "هٰذَا", "تِلْكَ", "هٰؤُلَاءِ"],
+                        correctIndex: 1,
+                        isArabicOptions: true,
+                        explanation: "هٰذَا (Haadzaa) digunakan untuk menunjuk isim mudzakkar (laki-laki) tunggal yang dekat, seperti قَلَمٌ."
+                    },
+                    {
+                        prompt: "Manakah di bawah ini yang merupakan kata benda perempuan (Mu'annats)?",
+                        arabic: "Tanda Mu'annats (ة)",
+                        options: ["كُرْسِيٌّ", "بَابٌ", "سَبُّورَةٌ", "فَصْلٌ"],
+                        correctIndex: 2,
+                        isArabicOptions: true,
+                        explanation: "سَبُّورَةٌ (Sabbuuratun - papan tulis) diakhiri huruf Ta Marbuthah (ة), tanda umum isim mu'annats."
+                    },
+                    {
+                        prompt: "Apa arti dari kata ganti (Dhamir) berikut ini?",
+                        arabic: "نَحْنُ",
+                        transliteration: "Nahnu",
+                        options: ["Saya", "Kamu", "Mereka", "Kami / Kita"],
+                        correctIndex: 3,
+                        isArabicOptions: false,
+                        explanation: "نَحْنُ (Nahnu) adalah kata ganti orang pertama jamak yang artinya 'Kami' atau 'Kita'."
+                    },
+                    {
+                        prompt: "Kata depan (Huruf Jar) yang berarti 'Di / Di dalam' adalah:",
+                        arabic: "الطَّالِبُ ..... الْفَصْلِ",
+                        transliteration: "(Siswa itu di dalam kelas)",
+                        options: ["إِلَى", "مِنْ", "فِي", "عَنْ"],
+                        correctIndex: 2,
+                        isArabicOptions: true,
+                        explanation: "فِي (Fii) adalah huruf jar yang berarti 'di' atau 'di dalam', dan membuat kata setelahnya berharakat kasrah (الْفَصْلِ)."
+                    },
+                    {
+                        prompt: "Manakah yang termasuk kategori 'Huruf' dalam pembagian kata bahasa Arab?",
+                        arabic: "الْكَلِمَةُ: اِسْمٌ، فِعْلٌ، حَرْفٌ",
+                        transliteration: "Tiga jenis kata dalam bahasa Arab",
+                        options: ["مَسْجِدٌ", "يَكْتُبُ", "إِلَى", "رَجُلٌ"],
+                        correctIndex: 2,
+                        isArabicOptions: true,
+                        explanation: "إِلَى (Ilaa - ke/menuju) termasuk Huruf (Huruf Jar). مَسْجِدٌ dan رَجُلٌ adalah Isim, sedangkan يَكْتُبُ adalah Fi'il."
+                    },
+                    {
+                        prompt: "Kata tunjuk yang tepat untuk kata 'سَيَّارَةٌ' (Mobil - Mu'annats) adalah:",
+                        arabic: "..... سَيَّارَةٌ سَرِيعَةٌ",
+                        transliteration: "(Ini mobil yang cepat)",
+                        options: ["هٰذَا", "هٰذِهِ", "ذٰلِكَ", "هُوَ"],
+                        correctIndex: 1,
+                        isArabicOptions: true,
+                        explanation: "Karena سَيَّارَةٌ berakhiran Ta Marbuthah (ة) sehingga bersifat Mu'annats, maka memakai هٰذِهِ (Haadzihi)."
+                    },
+                    {
+                        prompt: "Apa bentuk Fi'il Mudhari' (sedang/akan terjadi) dari kata kerja 'Membaca'?",
+                        arabic: "قَرَأَ (Telah membaca)",
+                        transliteration: "Ubah ke bentuk sedang membaca",
+                        options: ["يَقْرَأُ", "اِقْرَأْ", "قِرَاءَةٌ", "قَارِئٌ"],
+                        correctIndex: 0,
+                        isArabicOptions: true,
+                        explanation: "يَقْرَأُ (Yaqra'u) adalah Fi'il Mudhari' yang berarti 'dia sedang/akan membaca'."
+                    }
+                ]
+            }
+        };
+
+        // 2. VARIABEL STATE PERMAINAN
+        let currentCategoryKey = 'mufradat';
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let streak = 0;
+        let maxStreak = 0;
+        let correctAnswersCount = 0;
+        let isAnswered = false;
+        let soundEnabled = true;
+        let userHistory = [];
+
+        // Memuat High Score dari localStorage
+        let highScore = parseInt(localStorage.getItem('alMutafawwiqHighScore') || '0', 10);
+        document.getElementById('highScoreDisplay').textContent = highScore;
+
+        // 3. SISTEM EFEK SUARA (TONE.JS - TANPA URL EKSTERNAL)
+        function playSoundEffect(type) {
+            if (!soundEnabled || typeof Tone === 'undefined') return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                const synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.3 }
+                }).toDestination();
+                synth.volume.value = -8;
+
+                const now = Tone.now();
+                if (type === 'correct') {
+                    // Nada ceria naik (C5 -> E5 -> G5)
+                    synth.triggerAttackRelease("C5", "16n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.08);
+                    synth.triggerAttackRelease("G5", "8n", now + 0.16);
+                } else if (type === 'wrong') {
+                    // Nada rendah lembut (E3 -> C3)
+                    synth.triggerAttackRelease("E3", "8n", now);
+                    synth.triggerAttackRelease("C3", "4n", now + 0.12);
+                } else if (type === 'finish') {
+                    // Fanfare kemenangan sederhana
+                    synth.triggerAttackRelease("C5", "16n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.1);
+                    synth.triggerAttackRelease("G5", "16n", now + 0.2);
+                    synth.triggerAttackRelease("C6", "4n", now + 0.3);
+                }
+            } catch (e) {
+                // Abaikan jika browser memblokir audio otomatis
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundOnIcon').classList.toggle('hidden', !soundEnabled);
+            document.getElementById('soundOffIcon').classList.toggle('hidden', soundEnabled);
+        }
+
+        // 4. FUNGSI NAVIGASI LAYAR
+        function showScreen(screenId) {
+            ['startScreen', 'quizScreen', 'resultScreen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            const target = document.getElementById(screenId);
+            target.classList.remove('hidden');
+            target.classList.remove('animate-pop');
+            void target.offsetWidth; // trigger reflow animasi
+            target.classList.add('animate-pop');
+        }
+
+        function goHome() {
+            // Jika sedang bermain kuis dan belum selesai, tampilkan modal konfirmasi
+            if (!document.getElementById('quizScreen').classList.contains('hidden')) {
+                confirmQuit();
+            } else {
+                showScreen('startScreen');
+            }
+        }
+
+        function confirmQuit() {
+            const modal = document.getElementById('quitModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeQuitModal() {
+            const modal = document.getElementById('quitModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmGoHome() {
+            closeQuitModal();
+            showScreen('startScreen');
+        }
+
+        // 5. MEMULAI & MERENDER KUIS
+        function shuffleArray(array) {
+            const cloned = [...array];
+            for (let i = cloned.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+            }
+            return cloned;
+        }
+
+        function startGame(categoryKey) {
+            currentCategoryKey = categoryKey;
+            const categoryData = quizDatabase[categoryKey];
+
+            // Acak urutan soal agar permainan selalu segar
+            questions = shuffleArray(categoryData.questions);
+            currentQuestionIndex = 0;
+            score = 0;
+            lives = 3;
+            streak = 0;
+            maxStreak = 0;
+            correctAnswersCount = 0;
+            userHistory = [];
+
+            document.getElementById('categoryBadge').textContent = categoryData.title;
+            updateStatsUI();
+            showScreen('quizScreen');
+            renderQuestion();
+        }
+
+        function replayCategory() {
+            startGame(currentCategoryKey);
+        }
+
+        function updateStatsUI() {
+            // Render Nyawa (3 Hati)
+            const livesContainer = document.getElementById('livesContainer');
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const isAlive = i < lives;
+                livesContainer.innerHTML += `
+                    <svg class="w-6 h-6 transition-all duration-300 ${isAlive ? 'text-rose-500 scale-100' : 'text-slate-200 scale-90'}" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                `;
+            }
+
+            // Update Skor & Streak
+            document.getElementById('scoreDisplay').textContent = score;
+            document.getElementById('streakCount').textContent = streak;
+
+            const streakBadge = document.getElementById('streakBadge');
+            if (streak >= 2) {
+                streakBadge.classList.add('scale-110', 'bg-amber-100', 'border-amber-400');
+            } else {
+                streakBadge.classList.remove('scale-110', 'bg-amber-100', 'border-amber-400');
+            }
+
+            // Update Progress Bar
+            const total = questions.length;
+            const progressPercent = ((currentQuestionIndex) / total) * 100;
+            document.getElementById('progressBar').style.width = `${Math.max(8, progressPercent)}%`;
+            document.getElementById('questionCounter').textContent = `${currentQuestionIndex + 1} / ${total}`;
+        }
+
+        function renderQuestion() {
+            isAnswered = false;
+            const q = questions[currentQuestionIndex];
+            const card = document.getElementById('questionCard');
+
+            // Reset animasi kartu soal
+            card.classList.remove('animate-pop', 'animate-shake');
+            void card.offsetWidth;
+            card.classList.add('animate-pop');
+
+            // Sembunyikan kotak feedback
+            const feedbackBox = document.getElementById('feedbackBox');
+            feedbackBox.classList.add('hidden');
+
+            // Isi konten pertanyaan
+            document.getElementById('questionPrompt').textContent = q.prompt;
+            const arabicEl = document.getElementById('arabicText');
+            arabicEl.textContent = q.arabic;
+
+            // Sesuaikan gaya teks utama (apakah teks Arab atau teks Latin Indonesia)
+            const hasArabicChars = /[\u0600-\u06FF]/.test(q.arabic);
+            if (hasArabicChars) {
+                arabicEl.className = "font-arab text-4xl sm:text-5xl md:text-6xl font-bold text-emerald-950 tracking-wide py-2";
+            } else {
+                arabicEl.className = "text-2xl sm:text-3xl md:text-4xl font-extrabold text-emerald-950 py-3";
+            }
+
+            document.getElementById('transliterationHint').textContent = `(${q.transliteration})`;
+
+            // Render tombol opsi jawaban
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+
+            const letters = ['A', 'B', 'C', 'D'];
+            q.options.forEach((optionText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => handleAnswer(idx);
+                btn.id = `option-btn-${idx}`;
+
+                const textStyle = q.isArabicOptions
+                    ? "font-arab text-2xl sm:text-3xl font-bold text-slate-800"
+                    : "text-base sm:text-lg font-bold text-slate-700";
+
+                btn.className = "btn-game w-full p-4 rounded-2xl bg-white hover:bg-emerald-50/60 border-2 border-slate-200 border-b-slate-300 flex items-center justify-between gap-3 text-left transition cursor-pointer";
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-extrabold text-xs flex items-center justify-center shrink-0 option-letter">
+                        ${letters[idx]}
+                    </span>
+                    <span class="${textStyle} flex-grow ${q.isArabicOptions ? 'text-right pr-2' : ''}">
+                        ${optionText}
+                    </span>
+                `;
+                optionsContainer.appendChild(btn);
+            });
+
+            updateStatsUI();
+        }
+
+        // 6. MENANGANI JAWABAN PENGGUNA
+        function handleAnswer(selectedIndex) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const q = questions[currentQuestionIndex];
+            const isCorrect = selectedIndex === q.correctIndex;
+
+            // Nonaktifkan semua tombol opsi & beri warna indikator
+            q.options.forEach((_, idx) => {
+                const btn = document.getElementById(`option-btn-${idx}`);
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-emerald-50/60');
+
+                if (idx === q.correctIndex) {
+                    // Tandai jawaban benar dengan hijau emerald
+                    btn.classList.remove('bg-white', 'border-slate-200', 'border-b-slate-300');
+                    btn.classList.add('bg-emerald-50', 'border-emerald-500', 'border-b-emerald-600');
+                    btn.querySelector('.option-letter').classList.replace('bg-slate-100', 'bg-emerald-600');
+                    btn.querySelector('.option-letter').classList.replace('text-slate-600', 'text-white');
+                } else if (idx === selectedIndex && !isCorrect) {
+                    // Tandai jawaban salah yang dipilih user dengan merah rose
+                    btn.classList.remove('bg-white', 'border-slate-200', 'border-b-slate-300');
+                    btn.classList.add('bg-rose-50', 'border-rose-500', 'border-b-rose-600');
+                    btn.querySelector('.option-letter').classList.replace('bg-slate-100', 'bg-rose-600');
+                    btn.querySelector('.option-letter').classList.replace('text-slate-600', 'text-white');
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // Konfigurasi kotak feedback instan
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackExplanation = document.getElementById('feedbackExplanation');
+            const nextBtn = document.getElementById('nextQuestionBtn');
+
+            feedbackBox.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-300', 'text-emerald-950', 'bg-rose-50', 'border-rose-300', 'text-rose-950');
+
+            if (isCorrect) {
+                playSoundEffect('correct');
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+                correctAnswersCount++;
+
+                // Hitung poin + bonus streak
+                const bonusPoints = streak >= 2 ? (streak * 5) : 0;
+                const earned = 100 + bonusPoints;
+                score += earned;
+
+                feedbackBox.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-950');
+                feedbackIcon.className = "w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 text-xl font-bold mt-0.5";
+                feedbackIcon.textContent = "✓";
+                feedbackTitle.textContent = streak >= 2
+                    ? `Ahsanta! Benar (+${earned} Poin • Streak ${streak}x 🔥)`
+                    : `Mumtaz! Jawaban Benar (+${earned} Poin)`;
+                nextBtn.className = "btn-game shrink-0 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 border-b-emerald-800 font-bold text-white text-sm sm:text-base shadow-md cursor-pointer";
+            } else {
+                playSoundEffect('wrong');
+                streak = 0;
+                lives = Math.max(0, lives - 1);
+
+                // Efek getar ringan pada kartu
+                const card = document.getElementById('questionCard');
+                card.classList.remove('animate-pop');
+                void card.offsetWidth;
+                card.classList.add('animate-shake');
+
+                feedbackBox.classList.add('bg-rose-50', 'border-rose-300', 'text-rose-950');
+                feedbackIcon.className = "w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 text-xl font-bold mt-0.5";
+                feedbackIcon.textContent = "✕";
+                feedbackTitle.textContent = lives === 0
+                    ? "Yah, Nyawa Habis!"
+                    : `Kurang Tepat! Jawaban benar: ${q.options[q.correctIndex]}`;
+                nextBtn.className = "btn-game shrink-0 px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 border-b-rose-800 font-bold text-white text-sm sm:text-base shadow-md cursor-pointer";
+            }
+
+            feedbackExplanation.textContent = q.explanation;
+
+            // Teks tombol lanjut
+            if (lives === 0 || currentQuestionIndex === questions.length - 1) {
+                nextBtn.textContent = "Lihat Hasil →";
+            } else {
+                nextBtn.textContent = "Soal Berikutnya →";
+            }
+
+            // Catat riwayat untuk layar hasil
+            userHistory.push({
+                question: q.arabic,
+                correctAnswer: q.options[q.correctIndex],
+                userAnswer: q.options[selectedIndex],
+                isCorrect: isCorrect
+            });
+
+            updateStatsUI();
+        }
+
+        function nextQuestion() {
+            if (lives === 0 || currentQuestionIndex >= questions.length - 1) {
+                finishGame();
+            } else {
+                currentQuestionIndex++;
+                renderQuestion();
+            }
+        }
+
+        // 7. LAYAR HASIL AKHIR (RESULT SCREEN)
+        function finishGame() {
+            playSoundEffect('finish');
+            document.getElementById('progressBar').style.width = '100%';
+
+            // Simpan skor tertinggi jika terpecahkan
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('alMutafawwiqHighScore', highScore.toString());
+                document.getElementById('highScoreDisplay').textContent = highScore;
+            }
+
+            // Tentukan predikat nilai berbahasa Arab berdasarkan persentase benar
+            const totalQuestions = questions.length;
+            const accuracy = (correctAnswersCount / totalQuestions) * 100;
+
+            let arabicGrade = "مُمْتَازٌ";
+            let gradeTitle = "Mumtaz (Sempurna!)";
+            let subtitle = "MasyaAllah! Penguasaan materi bahasa Arabmu sangat mengesankan.";
+
+            if (lives === 0 && correctAnswersCount < 4) {
+                arabicGrade = "حَاوِلْ مَرَّةً أُخْرَى";
+                gradeTitle = "Terus Berlatih!";
+                subtitle = "Jangan menyerah! Baca kembali arti kata pada ringkasan di bawah dan coba lagi.";
+            } else if (accuracy >= 85) {
+                arabicGrade = "مُمْتَازٌ";
+                gradeTitle = "Mumtaz (Istimewa!)";
+                subtitle = "Luar biasa! Kamu menjawab hampir seluruh soal dengan sangat tepat.";
+            } else if (accuracy >= 65) {
+                arabicGrade = "جَيِّدٌ جِدًّا";
+                gradeTitle = "Jayyid Jiddan (Sangat Baik)";
+                subtitle = "Kerja bagus! Sedikit lagi berlatih kamu pasti bisa meraih predikat Mumtaz.";
+            } else {
+                arabicGrade = "جَيِّدٌ";
+                gradeTitle = "Jayyid (Baik)";
+                subtitle = "Awal yang baik! Ulangi permainan untuk memperkuat hafalan kosakata dan kaidahmu.";
+            }
+
+            document.getElementById('resultArabicGrade').textContent = arabicGrade;
+            document.getElementById('resultGradeTitle').textContent = gradeTitle;
+            document.getElementById('resultSubtitle').textContent = subtitle;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalCorrect').textContent = `${correctAnswersCount}/${totalQuestions}`;
+            document.getElementById('finalStreak').textContent = `${maxStreak}🔥`;
+
+            // Render daftar ringkasan jawaban
+            const reviewList = document.getElementById('reviewList');
+            reviewList.innerHTML = '';
+
+            userHistory.forEach((item, index) => {
+                const statusBadge = item.isCorrect
+                    ? `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-bold text-xs">Benar</span>`
+                    : `<span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 font-bold text-xs">Salah</span>`;
+
+                reviewList.innerHTML += `
+                    <div class="p-3 rounded-xl border ${item.isCorrect ? 'bg-emerald-50/40 border-emerald-200/70' : 'bg-rose-50/40 border-rose-200/70'} flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-400">#${index + 1}</span>
+                                <span class="font-bold text-slate-800 text-sm truncate">${item.question}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                Jawaban tepat: <strong class="text-emerald-800">${item.correctAnswer}</strong>
+                                ${!item.isCorrect ? ` • Pilihanmu: <span class="text-rose-600 line-through">${item.userAnswer}</span>` : ''}
+                            </p>
+                        </div>
+                        <div class="shrink-0">${statusBadge}</div>
+                    </div>
+                `;
+            });
+
+            showScreen('resultScreen');
+        }
+    </script>
+</body>
+</html>
